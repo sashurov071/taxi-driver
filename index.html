@@ -3,162 +3,452 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Haydovchi Paneli</title>
+    <title>Haydovchi Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --primary: #34c759; /* Yashil */
+            --danger: #ff3b30;  /* Qizil */
+            --accent: #0a84ff;  /* Ko'k */
+            --text-main: #ffffff;
+            --text-sec: #8e8e93;
+        }
+
         body {
-            background-color: #1c1c1e; /* Qora fon */
-            color: white;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+            padding-bottom: 80px; /* Pastki menyu uchun joy */
         }
 
-        /* Yuqori Panel */
-        .header {
-            background-color: #2c2c2e;
+        /* 1. YUQORI PANEL (STATS) */
+        .top-stats {
+            background: linear-gradient(180deg, #2c2c2e 0%, #1c1c1e 100%);
             padding: 15px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            justify-content: space-around;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
+        .stat-item { text-align: center; }
+        .stat-val { font-size: 18px; font-weight: bold; color: var(--primary); }
+        .stat-label { font-size: 12px; color: var(--text-sec); }
 
-        .status-badge {
-            background-color: #ff3b30; /* Offline (Qizil) */
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 14px;
-            font-weight: bold;
+        /* 2. SAHIFALAR (VIEWS) */
+        .view-section { display: none; padding: 15px; animation: fadeIn 0.3s; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* BUYURTMALAR RO'YXATI */
+        .order-card {
+            background-color: var(--card-color);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--accent);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
         }
+        .order-card:active { transform: scale(0.98); }
+        .order-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .order-price { font-size: 18px; font-weight: bold; color: #ffd60a; }
+        .route-info { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+        .loc-row { display: flex; align-items: center; gap: 10px; }
+        .fa-circle-dot { color: var(--primary); }
+        .fa-location-dot { color: var(--danger); }
 
-        .status-badge.online {
-            background-color: #34c759; /* Online (Yashil) */
+        /* TAXOMETR (ACTIVE RIDE) */
+        .meter-display {
+            text-align: center;
+            margin-top: 40px;
         }
-
-        /* Xarita joyi */
-        .map-container {
-            flex-grow: 1;
-            background-color: #3a3a3c;
-            position: relative;
+        .meter-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 8px solid var(--primary);
+            margin: 0 auto;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #8e8e93;
+            background: rgba(52, 199, 89, 0.1);
+            box-shadow: 0 0 20px rgba(52, 199, 89, 0.3);
         }
-
-        /* Pastki tugma */
-        .bottom-panel {
-            background-color: #2c2c2e;
-            padding: 20px;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
+        .live-price { font-size: 32px; font-weight: bold; color: #fff; }
+        .live-km { font-size: 16px; color: var(--text-sec); margin-top: 5px; }
+        
+        .action-buttons {
+            position: fixed;
+            bottom: 90px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            gap: 15px;
         }
-
-        .action-btn {
-            width: 100%;
+        .btn {
+            flex: 1;
             padding: 15px;
             border: none;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
+            color: white;
             cursor: pointer;
-            transition: 0.2s;
         }
+        .btn-green { background-color: var(--primary); }
+        .btn-red { background-color: var(--danger); }
+        .btn-blue { background-color: var(--accent); }
 
-        .btn-go-online {
-            background-color: #34c759;
-            color: white;
+        /* HISOBOTLAR (REPORTS) */
+        .report-card {
+            background-color: var(--card-color);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
         }
+        .month-title { font-size: 20px; color: var(--text-sec); margin-bottom: 10px; }
+        .big-number { font-size: 36px; font-weight: bold; color: var(--primary); }
 
-        .btn-go-offline {
-            background-color: #ff3b30;
-            color: white;
-            display: none; /* Boshida ko'rinmaydi */
+        /* PASTKI MENYU */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #1c1c1e;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            border-top: 1px solid #333;
         }
+        .nav-item {
+            color: var(--text-sec);
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .nav-item.active { color: var(--primary); }
 
-        /* Buyurtma kartochkasi (Yashirin) */
-        .order-card {
+        /* MODAL (Buyurtma tafsiloti) */
+        .modal {
             display: none;
-            background-color: #48484a;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 10px;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            justify-content: center;
+            align-items: flex-end;
         }
-        .order-info { margin-bottom: 10px; }
-        .price { font-size: 20px; color: #ffd60a; font-weight: bold; }
-
+        .modal-content {
+            background: var(--card-color);
+            width: 100%;
+            padding: 25px;
+            border-radius: 20px 20px 0 0;
+            animation: slideUp 0.3s;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .phone-btn {
+            display: block;
+            background: #333;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            margin: 15px 0;
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div id="driverName">Haydovchi</div>
-        <div id="statusBadge" class="status-badge">OFFLINE</div>
+    <div class="top-stats">
+        <div class="stat-item">
+            <div class="stat-val" id="todayIncome">0 so'm</div>
+            <div class="stat-label">Bugun</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-val" id="todayKm">0.0 km</div>
+            <div class="stat-label">Masofa</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-val" style="color: gold;">4.9 ★</div>
+            <div class="stat-label">Reyting</div>
+        </div>
     </div>
 
-    <div class="map-container">
-        <p>Xarita yuklanmoqda...</p>
-    </div>
-
-    <div class="bottom-panel">
-        
-        <div id="orderCard" class="order-card">
-            <div class="order-info">
-                <h3>Yangi buyurtma!</h3>
-                <p>📍 A. Temur ko'chasi, 15-uy</p>
-                <div class="price">15,000 so'm</div>
+    <div id="view-orders" class="view-section active">
+        <h3 style="margin: 10px 0; color: #888;">Yangi buyurtmalar:</h3>
+        <div id="ordersList">
             </div>
-            <button class="action-btn" style="background-color: #007aff; color: white;">Qabul qilish</button>
+        <div style="text-align:center; padding:20px; color:#555;" id="noOrders">
+            Hozircha buyurtmalar yo'q...
+        </div>
+    </div>
+
+    <div id="view-ride" class="view-section">
+        <div class="meter-display">
+            <div class="meter-circle">
+                <div class="live-price" id="livePrice">0</div>
+                <div style="font-size:14px; color:#aaa;">so'm</div>
+                <div class="live-km" id="liveKm">0.00 km</div>
+            </div>
+        </div>
+        <div style="margin-top:30px; text-align: center;">
+            <p style="color:#aaa;">Tarif: <span style="color:#fff;">Start 4000 + 3000 so'm/km</span></p>
         </div>
 
-        <button id="btnOnline" class="action-btn btn-go-online" onclick="toggleStatus()">ISHGA CHIQISH</button>
-        <button id="btnOffline" class="action-btn btn-go-offline" onclick="toggleStatus()">ISHNI TUGATISH</button>
+        <div class="action-buttons">
+            <button class="btn btn-blue" onclick="openNav()">🗺 Xarita</button>
+            <button class="btn btn-red" onclick="finishRide()">🏁 Yakunlash</button>
+        </div>
+    </div>
+
+    <div id="view-stats" class="view-section">
+        <div class="report-card">
+            <div class="month-title">Dekabr, 2025</div>
+            <div class="big-number" id="monthIncome">0 so'm</div>
+            <p style="color:#888;">Jami daromad</p>
+        </div>
+        <div class="report-card">
+            <div class="big-number" style="color: var(--accent);" id="monthKm">0 km</div>
+            <p style="color:#888;">Jami masofa</p>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('orders')">
+            <i class="fa-solid fa-list"></i>
+        </div>
+        <div class="nav-item" onclick="switchTab('ride')">
+            <i class="fa-solid fa-car-side"></i>
+        </div>
+        <div class="nav-item" onclick="switchTab('stats')">
+            <i class="fa-solid fa-chart-pie"></i>
+        </div>
+    </div>
+
+    <div id="orderModal" class="modal" onclick="closeModal(event)">
+        <div class="modal-content">
+            <h2 id="modalPrice" style="color:#ffd60a; margin-top:0;">15,000 so'm</h2>
+            <div class="route-info" style="font-size:16px; margin-bottom:20px;">
+                <div class="loc-row"><i class="fa-solid fa-circle-dot"></i> <span id="modalFrom">...</span></div>
+                <div class="loc-row"><i class="fa-solid fa-location-dot"></i> <span id="modalTo">...</span></div>
+            </div>
+            
+            <a href="#" id="modalPhone" class="phone-btn"><i class="fa-solid fa-phone"></i> Mijozga qo'ng'iroq</a>
+
+            <button class="btn btn-green" style="width:100%" onclick="acceptOrder()">Qabul qilish va Haydash</button>
+        </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand(); // Ilovani to'liq ekran qilish
+        tg.expand();
 
-        let isOnline = false;
+        // --- SOZLAMALAR ---
+        const START_PRICE = 4000;
+        const PRICE_PER_KM = 3000;
+        
+        // --- GLOBAL O'ZGARUVCHILAR ---
+        let currentRide = null;
+        let watchId = null;
+        let totalKm = 0;
+        let totalPrice = 0;
+        let selectedOrder = null;
 
-        // Haydovchi ismini Telegramdan olish
-        if(tg.initDataUnsafe.user) {
-            document.getElementById('driverName').innerText = tg.initDataUnsafe.user.first_name;
-        }
+        // --- MA'LUMOTLARNI SAQLASH (DATABASE SIMULYATSIYASI) ---
+        let stats = JSON.parse(localStorage.getItem('taxiStats')) || {
+            todayIncome: 0, todayKm: 0,
+            monthIncome: 0, monthKm: 0
+        };
+        updateStatsUI();
 
-        function toggleStatus() {
-            isOnline = !isOnline;
-            const badge = document.getElementById('statusBadge');
-            const btnOnline = document.getElementById('btnOnline');
-            const btnOffline = document.getElementById('btnOffline');
-            const orderCard = document.getElementById('orderCard');
+        // --- 1. BUYURTMALAR RO'YXATI (SIMULYATSIYA) ---
+        const fakeOrders = [
+            {id: 1, from: "Amir Temur ko'chasi, 15", to: "Chorsu Bozori", price: 15000, lat: 41.3275, lon: 69.2401, phone: "+998901234567"},
+            {id: 2, from: "Aeroport", to: "Hotel Uzbekistan", price: 25000, lat: 41.2995, lon: 69.2401, phone: "+998933333333"},
+        ];
 
-            if (isOnline) {
-                // Online bo'ldi
-                badge.innerText = "ONLINE";
-                badge.classList.add('online');
-                btnOnline.style.display = 'none';
-                btnOffline.style.display = 'block';
-                
-                // Simulyatsiya: 3 soniyadan keyin buyurtma chiqadi
-                setTimeout(() => {
-                    orderCard.style.display = 'block';
-                    tg.HapticFeedback.notificationOccurred('success'); // Telefon titraydi
-                }, 3000);
-
+        function renderOrders() {
+            const list = document.getElementById('ordersList');
+            const noOrders = document.getElementById('noOrders');
+            list.innerHTML = "";
+            
+            if(fakeOrders.length > 0) {
+                noOrders.style.display = 'none';
+                fakeOrders.forEach(order => {
+                    let item = document.createElement('div');
+                    item.className = 'order-card';
+                    item.innerHTML = `
+                        <div class="order-header">
+                            <span style="font-weight:bold;">Buyurtma #${order.id}</span>
+                            <span class="order-price">${order.price.toLocaleString()} so'm</span>
+                        </div>
+                        <div class="route-info">
+                            <div class="loc-row"><i class="fa-solid fa-circle-dot"></i> ${order.from}</div>
+                            <div class="loc-row"><i class="fa-solid fa-location-dot"></i> ${order.to}</div>
+                        </div>
+                    `;
+                    item.onclick = () => showOrderDetails(order);
+                    list.appendChild(item);
+                });
             } else {
-                // Offline bo'ldi
-                badge.innerText = "OFFLINE";
-                badge.classList.remove('online');
-                btnOnline.style.display = 'block';
-                btnOffline.style.display = 'none';
-                orderCard.style.display = 'none';
+                noOrders.style.display = 'block';
             }
         }
+        renderOrders();
+
+        // --- 2. MODAL VA QABUL QILISH ---
+        function showOrderDetails(order) {
+            selectedOrder = order;
+            document.getElementById('modalPrice').innerText = order.price.toLocaleString() + " so'm";
+            document.getElementById('modalFrom').innerText = order.from;
+            document.getElementById('modalTo').innerText = order.to;
+            document.getElementById('modalPhone').href = "tel:" + order.phone;
+            document.getElementById('orderModal').style.display = 'flex';
+        }
+
+        function closeModal(e) {
+            if (e.target.id === 'orderModal') {
+                document.getElementById('orderModal').style.display = 'none';
+            }
+        }
+
+        function acceptOrder() {
+            document.getElementById('orderModal').style.display = 'none';
+            
+            // 1. Google Mapsni ochish (Marshrut)
+            let url = `https://www.google.com/maps/dir/?api=1&destination=${selectedOrder.lat},${selectedOrder.lon}`;
+            window.open(url, '_blank');
+
+            // 2. Takso-metr rejimiga o'tish
+            switchTab('ride');
+            startRide();
+            
+            // 3. Buyurtmani ro'yxatdan o'chirish (Simulyatsiya)
+            const index = fakeOrders.findIndex(o => o.id === selectedOrder.id);
+            if (index > -1) fakeOrders.splice(index, 1);
+            renderOrders();
+        }
+
+        // --- 3. GPS VA TAKSO-METR ---
+        function startRide() {
+            totalKm = 0;
+            totalPrice = START_PRICE;
+            updateMeterUI();
+
+            if (navigator.geolocation) {
+                let lastPos = null;
+                watchId = navigator.geolocation.watchPosition((position) => {
+                    if (lastPos) {
+                        let d = calculateDistance(
+                            lastPos.coords.latitude, lastPos.coords.longitude,
+                            position.coords.latitude, position.coords.longitude
+                        );
+                        if (d > 0.05) { // Agar 50 metrdan ko'p yursa hisobla (pomekani oldini olish)
+                            totalKm += d;
+                            totalPrice = START_PRICE + (totalKm * PRICE_PER_KM);
+                            updateMeterUI();
+                            lastPos = position;
+                        }
+                    } else {
+                        lastPos = position;
+                    }
+                }, (err) => {
+                    console.log("GPS Xato:", err);
+                }, { enableHighAccuracy: true });
+            } else {
+                alert("GPS ishlamayapti!");
+            }
+        }
+
+        function finishRide() {
+            if(confirm("Safarni yakunlaysizmi?")) {
+                navigator.geolocation.clearWatch(watchId);
+                
+                // Bazaga yozish (LocalStorage)
+                stats.todayIncome += totalPrice;
+                stats.todayKm += totalKm;
+                stats.monthIncome += totalPrice;
+                stats.monthKm += totalKm;
+                localStorage.setItem('taxiStats', JSON.stringify(stats));
+                updateStatsUI();
+
+                tg.showAlert(`Safar tugadi!\nSumma: ${Math.floor(totalPrice)} so'm\nMasofa: ${totalKm.toFixed(2)} km`);
+                
+                // Qayta ro'yxatga o'tish
+                switchTab('orders');
+                // Metrni tozalash
+                totalKm = 0; totalPrice = 0; updateMeterUI();
+            }
+        }
+
+        function openNav() {
+            if(selectedOrder) {
+                let url = `https://www.google.com/maps/dir/?api=1&destination=${selectedOrder.lat},${selectedOrder.lon}`;
+                window.open(url, '_blank');
+            }
+        }
+
+        // --- YORDAMCHI FUNKSIYALAR ---
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Yer radiusi
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // km da qaytaradi
+        }
+
+        function updateMeterUI() {
+            document.getElementById('livePrice').innerText = Math.floor(totalPrice).toLocaleString();
+            document.getElementById('liveKm').innerText = totalKm.toFixed(2) + " km";
+        }
+
+        function updateStatsUI() {
+            document.getElementById('todayIncome').innerText = stats.todayIncome.toLocaleString() + " so'm";
+            document.getElementById('todayKm').innerText = stats.todayKm.toFixed(1) + " km";
+            document.getElementById('monthIncome').innerText = stats.monthIncome.toLocaleString() + " so'm";
+            document.getElementById('monthKm').innerText = stats.monthKm.toFixed(1) + " km";
+        }
+
+        function switchTab(tabName) {
+            // Hamma oynani yopish
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            // Keraklisini ochish
+            document.getElementById('view-' + tabName).classList.add('active');
+            
+            // Ikonkani aktiv qilish
+            const icons = { 'orders': 0, 'ride': 1, 'stats': 2 };
+            document.querySelectorAll('.nav-item')[icons[tabName]].classList.add('active');
+        }
+
+        // Har 10 sekundda ro'yxatni "yangilash" (Simulyatsiya)
+        setInterval(() => {
+            if(Math.random() > 0.7 && fakeOrders.length < 5) {
+                fakeOrders.push({
+                    id: Math.floor(Math.random()*1000),
+                    from: "Yangi buyurtma manzili",
+                    to: "Qayerdir markaz",
+                    price: Math.floor(Math.random()*20 + 10) * 1000,
+                    lat: 41.31, lon: 69.24, phone: "+998901234567"
+                });
+                renderOrders();
+            }
+        }, 10000);
+
     </script>
 </body>
 </html>
