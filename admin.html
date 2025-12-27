@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: var(--text);
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            animation: slideDown 0.8s ease;
+        }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 300; }
+        .header h1 b { font-weight: 700; color: #00cec9; text-shadow: 0 0 10px rgba(0, 206, 201, 0.5); }
+        .admin-badge {
+            background: rgba(0, 206, 201, 0.2);
+            color: #00cec9;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid rgba(0, 206, 201, 0.3);
+        }
+
+        /* CARDS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+            animation: fadeIn 1s ease;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        
+        /* Card Decoration */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            opacity: 0; transition: 0.5s;
+        }
+        .card:hover::before { opacity: 1; }
+
+      .card-icon {
+    font-size: 24px;
+    margin-bottom: 10px;
+    
+    /* Agar gradient ishlamasa, oddiy rang chiqsin */
+    color: #6c5ce7; 
+    
+    /* Gradient foni */
+    background: -webkit-linear-gradient(45deg, #00cec9, #6c5ce7);
+    background: linear-gradient(45deg, #00cec9, #6c5ce7);
+    
+    /* Matnni qirqish (Standard va Webkit) */
+    background-clip: text;
+    -webkit-background-clip: text;
+    
+    /* Matn rangini shaffof qilish */
+    -webkit-text-fill-color: transparent;
+    
+    /* Ba'zi brauzerlarda to'g'ri ko'rinishi uchun */
+    display: inline-block;
+}
+
+        .card-value { font-size: 28px; font-weight: bold; margin: 5px 0; }
+        .card-label { font-size: 13px; color: #b2bec3; }
+
+        /* CHART SECTION */
+        .chart-container {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            animation: slideUp 1s ease;
+        }
+        .chart-title { margin: 0 0 15px 0; font-size: 18px; color: #dfe6e9; }
+
+        /* LIST SECTION */
+        .list-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 10px;
+        }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            align-items: center;
+        }
+        .list-item:last-child { border: none; }
+        .user-avatar {
+            width: 40px; height: 40px;
+            background: linear-gradient(45deg, #fd79a8, #e84393);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; margin-right: 15px;
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Taxi<b>Admin</b></h1>
+            <span class="admin-badge">BOSS</span>
+        </div>
+
+        <div class="stats-grid">
+            <div class="card">
+                <i class="fa-solid fa-users card-icon"></i>
+                <div class="card-value" id="totalUsers">0</div>
+                <div class="card-label">Jami foydalanuvchilar</div>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-taxi card-icon"></i>
+                <div class="card-value" id="totalDrivers">0</div>
+                <div class="card-label">Haydovchilar</div>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-route card-icon"></i>
+                <div class="card-value" id="totalOrders">0</div>
+                <div class="card-label">Buyurtmalar</div>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-wallet card-icon"></i>
+                <div class="card-value" id="totalRevenue">0</div>
+                <div class="card-label">Jami daromad ($)</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">Haftalik o'sish dinamikasi</h3>
+            <canvas id="myChart"></canvas>
+        </div>
+
+        <div class="chart-container" style="padding: 0;">
+            <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h3 class="chart-title" style="margin:0;">Oxirgi faollar</h3>
+            </div>
+            <div class="list-container">
+                <div class="list-item">
+                    <div style="display:flex; align-items:center;">
+                        <div class="user-avatar">A</div>
+                        <div>
+                            <div style="font-weight:bold;">Ali Valiev</div>
+                            <div style="font-size:12px; color:#aaa;">Haydovchi</div>
+                        </div>
+                    </div>
+                    <div style="color:#00cec9;">+450k so'm</div>
+                </div>
+                <div class="list-item">
+                    <div style="display:flex; align-items:center;">
+                        <div class="user-avatar" style="background: linear-gradient(45deg, #0984e3, #74b9ff);">B</div>
+                        <div>
+                            <div style="font-weight:bold;">Bekzod</div>
+                            <div style="font-size:12px; color:#aaa;">Mijoz</div>
+                        </div>
+                    </div>
+                    <div style="color:#aaa;">Yangi</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        // 1. URL dan ma'lumotlarni o'qib olish (Python yuborgan data)
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Agar ma'lumot bo'lmasa 0 deb olamiz
+        const users = urlParams.get('users') || 0;
+        const drivers = urlParams.get('drivers') || 0;
+        const orders = urlParams.get('orders') || 0;
+        const income = urlParams.get('income') || 0;
+
+        // 2. Raqamlarni animatsiya bilan chiqarish (CountUp)
+        function animateValue(id, end, duration) {
+            const obj = document.getElementById(id);
+            let start = 0;
+            const range = end - start;
+            const increment = end > 50 ? Math.ceil(end / 50) : 1;
+            const stepTime = Math.abs(Math.floor(duration / (range / increment)));
+            
+            let timer = setInterval(() => {
+                start += increment;
+                if (start > end) start = end;
+                obj.innerHTML = start.toLocaleString();
+                if (start == end) clearInterval(timer);
+            }, stepTime);
+        }
+
+        animateValue("totalUsers", parseInt(users), 1500);
+        animateValue("totalDrivers", parseInt(drivers), 1500);
+        animateValue("totalOrders", parseInt(orders), 1500);
+        animateValue("totalRevenue", parseInt(income), 2000);
+
+        // 3. Diagrammani chizish (Chart.js)
+        const ctx = document.getElementById('myChart').getContext('2d');
+        
+        // Gradient rang
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(108, 92, 231, 0.5)');
+        gradient.addColorStop(1, 'rgba(108, 92, 231, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan', 'Yak'],
+                datasets: [{
+                    label: 'Buyurtmalar soni',
+                    data: [12, 19, 15, 25, 22, 30, parseInt(orders)], // Oxirgisini real data qildik
+                    backgroundColor: gradient,
+                    borderColor: '#6c5ce7',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    fill: true,
+                    tension: 0.4 // Egri chiziq
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#aaa' } },
+                    x: { grid: { display: false }, ticks: { color: '#aaa' } }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
