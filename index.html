@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Haydovchi Paneli</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #1c1c1e; /* Qora fon */
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Yuqori Panel */
+        .header {
+            background-color: #2c2c2e;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .status-badge {
+            background-color: #ff3b30; /* Offline (Qizil) */
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .status-badge.online {
+            background-color: #34c759; /* Online (Yashil) */
+        }
+
+        /* Xarita joyi */
+        .map-container {
+            flex-grow: 1;
+            background-color: #3a3a3c;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #8e8e93;
+        }
+
+        /* Pastki tugma */
+        .bottom-panel {
+            background-color: #2c2c2e;
+            padding: 20px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-go-online {
+            background-color: #34c759;
+            color: white;
+        }
+
+        .btn-go-offline {
+            background-color: #ff3b30;
+            color: white;
+            display: none; /* Boshida ko'rinmaydi */
+        }
+
+        /* Buyurtma kartochkasi (Yashirin) */
+        .order-card {
+            display: none;
+            background-color: #48484a;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        .order-info { margin-bottom: 10px; }
+        .price { font-size: 20px; color: #ffd60a; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div id="driverName">Haydovchi</div>
+        <div id="statusBadge" class="status-badge">OFFLINE</div>
+    </div>
+
+    <div class="map-container">
+        <p>Xarita yuklanmoqda...</p>
+    </div>
+
+    <div class="bottom-panel">
+        
+        <div id="orderCard" class="order-card">
+            <div class="order-info">
+                <h3>Yangi buyurtma!</h3>
+                <p>📍 A. Temur ko'chasi, 15-uy</p>
+                <div class="price">15,000 so'm</div>
+            </div>
+            <button class="action-btn" style="background-color: #007aff; color: white;">Qabul qilish</button>
+        </div>
+
+        <button id="btnOnline" class="action-btn btn-go-online" onclick="toggleStatus()">ISHGA CHIQISH</button>
+        <button id="btnOffline" class="action-btn btn-go-offline" onclick="toggleStatus()">ISHNI TUGATISH</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Ilovani to'liq ekran qilish
+
+        let isOnline = false;
+
+        // Haydovchi ismini Telegramdan olish
+        if(tg.initDataUnsafe.user) {
+            document.getElementById('driverName').innerText = tg.initDataUnsafe.user.first_name;
+        }
+
+        function toggleStatus() {
+            isOnline = !isOnline;
+            const badge = document.getElementById('statusBadge');
+            const btnOnline = document.getElementById('btnOnline');
+            const btnOffline = document.getElementById('btnOffline');
+            const orderCard = document.getElementById('orderCard');
+
+            if (isOnline) {
+                // Online bo'ldi
+                badge.innerText = "ONLINE";
+                badge.classList.add('online');
+                btnOnline.style.display = 'none';
+                btnOffline.style.display = 'block';
+                
+                // Simulyatsiya: 3 soniyadan keyin buyurtma chiqadi
+                setTimeout(() => {
+                    orderCard.style.display = 'block';
+                    tg.HapticFeedback.notificationOccurred('success'); // Telefon titraydi
+                }, 3000);
+
+            } else {
+                // Offline bo'ldi
+                badge.innerText = "OFFLINE";
+                badge.classList.remove('online');
+                btnOnline.style.display = 'block';
+                btnOffline.style.display = 'none';
+                orderCard.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
