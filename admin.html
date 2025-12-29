@@ -2,173 +2,125 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Taxi Admin Pro - Connected</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxi Admin Pro</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    
     <style>
         :root {
-            --bg-body: #F4F5F9; --bg-white: #FFFFFF; --text-dark: #111827;
-            --text-grey: #6B7280; --primary: #E11D48; --success: #10B981;
-            --radius: 20px; --shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-            --sidebar-width: 260px;
+            --bg: #F4F5F9; --white: #FFF; --text: #111827; --primary: #E11D48; /* Pushti */
+            --radius: 20px; --shadow: 0 4px 20px rgba(0,0,0,0.03);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-body); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
-
-        .sidebar {
-            width: var(--sidebar-width); background: var(--bg-body); padding: 25px 20px;
-            display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,0.05);
-            transition: 0.3s ease; z-index: 100;
-        }
-        @media (max-width: 1024px) {
-            .sidebar { position: fixed; left: -100%; top: 0; height: 100%; background: white; box-shadow: 10px 0 30px rgba(0,0,0,0.1); }
-            .sidebar.active { left: 0; }
-        }
-        .brand { font-size: 24px; font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 12px; }
-        .brand-icon { width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .menu-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; cursor: pointer; color: var(--text-grey); border-radius: 16px; font-weight: 600; margin-bottom: 5px; transition: 0.2s; }
-        .menu-item:hover, .menu-item.active { background: white; color: var(--primary); box-shadow: var(--shadow); }
-        .menu-item.active { background: var(--primary); color: white; }
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: var(--white); padding: 25px; display: flex; flex-direction: column; border-right: 1px solid #eee; }
+        .brand { font-size: 24px; font-weight: 800; color: var(--primary); margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        .menu-item { padding: 12px 15px; border-radius: 12px; color: #6B7280; font-weight: 600; cursor: pointer; margin-bottom: 5px; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .menu-item:hover, .menu-item.active { background: #FFF0F3; color: var(--primary); }
 
-        .main-content { flex: 1; padding: 30px 40px; overflow-y: auto; position: relative; }
-        .menu-toggle { display: none; font-size: 24px; cursor: pointer; margin-right: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .header-left { display: flex; align-items: center; }
-
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-        .grid-3-1 { display: grid; grid-template-columns: 2.5fr 1fr; gap: 20px; margin-bottom: 30px; }
-        @media (max-width: 1024px) {
-            .main-content { padding: 20px; }
-            .grid-4 { grid-template-columns: repeat(2, 1fr); }
-            .grid-3-1 { grid-template-columns: 1fr; }
-            .menu-toggle { display: block; }
-        }
-        @media (max-width: 600px) { .grid-4 { grid-template-columns: 1fr; } }
-
-        .card { background: var(--bg-white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); transition: transform 0.3s; }
-        .card:hover { transform: translateY(-5px); }
-        .stat-value { font-size: 28px; font-weight: 800; margin: 10px 0; }
-        .badge-up { background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        /* MAIN */
+        .main { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
         
-        .view-section { display: none; animation: fadeIn 0.4s; }
+        /* TABS (Views) */
+        .view-section { display: none; height: 100%; }
         .view-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer;}
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 90; display: none; }
-        .overlay.active { display: block; }
+        /* CARDS */
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; }
+        .card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+        .stat-val { font-size: 28px; font-weight: 800; margin: 5px 0; }
+        
+        /* MAP CONTAINER */
+        #map { width: 100%; height: 500px; border-radius: var(--radius); box-shadow: var(--shadow); }
+        
+        /* DRIVER LIST */
+        .driver-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .online { background: #34c759; }
     </style>
 </head>
 <body>
-    <div class="overlay" onclick="toggleMenu()"></div>
 
-    <nav class="sidebar" id="sidebar">
-        <div class="brand">
-            <div class="brand-icon"><i class="fa-solid fa-taxi"></i></div> TaxiPro
-        </div>
+    <nav class="sidebar">
+        <div class="brand"><i class="fa-solid fa-taxi"></i> TaxiPro</div>
         <div class="menu-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Dashboard</div>
-        <div class="menu-item" onclick="switchTab('drivers', this)"><i class="fa-solid fa-users"></i> Haydovchilar</div>
-        <div class="menu-item" onclick="switchTab('settings', this)"><i class="fa-solid fa-gear"></i> Sozlamalar</div>
+        <div class="menu-item" onclick="switchTab('map', this)"><i class="fa-solid fa-map"></i> Live Map</div>
+        <div class="menu-item" onclick="switchTab('finance', this)"><i class="fa-solid fa-wallet"></i> Moliya</div>
     </nav>
 
-    <main class="main-content">
+    <main class="main">
         <div class="header">
-            <div class="header-left">
-                <div class="menu-toggle" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></div>
-                <div><h1 style="font-size: 24px; font-weight: 800;">Dashboard</h1><p style="color: var(--text-grey); font-size: 14px;">Xush kelibsiz, Admin!</p></div>
+            <div>
+                <h1 style="font-size:24px; font-weight:800;">Admin Panel</h1>
+                <p style="color:#666;">Xush kelibsiz, Boss!</p>
             </div>
-            <img src="https://ui-avatars.com/api/?name=Admin&background=E11D48&color=fff" style="width: 40px; height: 40px; border-radius: 50%;">
+            <img src="https://ui-avatars.com/api/?name=Admin&background=E11D48&color=fff" style="width:40px; height:40px; border-radius:50%;">
         </div>
 
-        <section id="view-dashboard" class="view-section active">
+        <div id="view-dashboard" class="view-section active">
             <div class="grid-4">
                 <div class="card">
-                    <div style="font-size: 13px; color: var(--text-grey);">Jami Tushum</div>
-                    <div class="stat-value">$528,976</div>
-                    <div class="badge-up">+7.9%</div>
+                    <div style="color:#666; font-size:13px;">Jami Tushum</div>
+                    <div class="stat-val">$528,976</div>
                 </div>
-                <div class="card" style="background: #111827; color: white;">
-                    <div style="opacity: 0.7; font-size: 13px;">Faol Buyurtma</div>
-                    <div style="font-size: 32px; font-weight: 700; margin-top: 5px;">42 ta</div>
-                </div>
-            </div>
-            <div class="grid-3-1">
-                <div class="card">
-                    <h3 style="font-weight: 700; margin-bottom: 20px;">Haftalik Statistika</h3>
-                    <div style="height: 200px;"><canvas id="mainChart"></canvas></div>
-                </div>
-                <div class="card">
-                    <h3 style="font-weight: 700; margin-bottom: 15px;">Haydovchilar</h3>
-                    <div class="list-item" onclick="blockDriver('Bekzod K.')">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="https://ui-avatars.com/api/?name=B+K" style="width: 30px; height: 30px; border-radius: 8px;">
-                            <span style="font-weight: 600; font-size: 14px;">Bekzod K.</span>
-                        </div>
-                        <div style="color: #E11D48; font-size: 12px; font-weight: bold;">Bloklash</div>
-                    </div>
+                <div class="card" style="background:#111827; color:white;">
+                    <div style="opacity:0.7; font-size:13px;">Faol Haydovchilar</div>
+                    <div class="stat-val">12 ta</div>
                 </div>
             </div>
-        </section>
+            <h3 style="margin-bottom:15px;">Muborak Jonli Xaritasi</h3>
+            <div id="map"></div>
+        </div>
 
-        <section id="view-settings" class="view-section">
-            <h2 style="margin-bottom: 20px;">Sozlamalar</h2>
+        <div id="view-finance" class="view-section">
             <div class="card">
-                <p style="margin-bottom: 15px;">Boshlang'ich narx (so'm):</p>
-                <input type="number" id="startPriceInput" value="4000" style="padding: 10px; border: 1px solid #ccc; border-radius: 8px; width: 100px;">
-                <button onclick="saveSettings()" style="background: #E11D48; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-left: 10px;">Saqlash</button>
+                <h3>Depozit So'rovlari</h3>
+                <p>Hozircha yangi so'rovlar yo'q...</p>
             </div>
-        </section>
+        </div>
     </main>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.querySelector('.overlay').classList.toggle('active');
-        }
-
-        function switchTab(viewId, element) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+        // TABS
+        function switchTab(viewId, el) {
+            document.querySelectorAll('.view-section').forEach(d => d.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(d => d.classList.remove('active'));
             document.getElementById('view-' + viewId).classList.add('active');
-            if(element) element.classList.add('active');
-            if (window.innerWidth <= 1024) toggleMenu();
+            el.classList.add('active');
+            
+            // Xarita o'lchamini to'g'irlash (Leaflet bug)
+            setTimeout(() => { map.invalidateSize(); }, 100);
         }
 
-        // ==========================================
-        // 🔥 2. BOTGA SIGNAL YUBORISH (ADMIN)
-        // ==========================================
+        // MAP SETUP
+        var map = L.map('map').setView([39.2618, 65.1522], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         
-        function blockDriver(name) {
-            if(confirm(name + " ni bloklamoqchimisiz?")) {
-                const data = { action: "block_driver", name: name };
-                tg.sendData(JSON.stringify(data));
-            }
-        }
+        L.circle([39.2618, 65.1522], {
+            color: '#E11D48', fillColor: '#E11D48', fillOpacity: 0.1, radius: 15000
+        }).addTo(map);
 
-        function saveSettings() {
-            const price = document.getElementById('startPriceInput').value;
-            const data = { action: "update_settings", start_price: price };
-            tg.sendData(JSON.stringify(data));
+        // LIVE DRIVERS FETCH
+        async function updateMap() {
+            try {
+                // Localhostdagi botdan data olamiz
+                let res = await fetch('http://localhost:8080/api/drivers');
+                let drivers = await res.json();
+                
+                // Markerlarni tozalab yangisini chizamiz (Soddalashtirilgan)
+                // Real loyihada marker.setLatLng() ishlatiladi
+                drivers.forEach(d => {
+                    L.marker([d.lat, d.lon]).addTo(map)
+                        .bindPopup(`<b>${d.name}</b><br>${d.car}`);
+                });
+            } catch(e) { console.log("Server off"); }
         }
-
-        // Chart
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'],
-                datasets: [{ label: 'Daromad', data: [12, 19, 15, 25, 22, 30, 35], backgroundColor: '#E11D48', borderRadius: 6 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
-        });
+        setInterval(updateMap, 5000);
     </script>
 </body>
 </html>
