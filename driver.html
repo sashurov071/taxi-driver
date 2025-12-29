@@ -3,86 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Driver Pro</title>
+    <title>Driver Terminal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; height: 100vh; display: flex; flex-direction: column; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
-        /* Dashboard */
-        .dash { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .price { font-size: 60px; font-weight: bold; color: #34c759; line-height: 1; }
-        .label { color: #666; font-size: 14px; margin-bottom: 20px; }
-        .km { font-size: 24px; font-weight: 500; color: #fff; border: 1px solid #333; padding: 5px 15px; border-radius: 20px; }
-        
-        /* Status Bar */
-        .status-bar { position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 8px; font-size: 12px; }
-        .dot { width: 8px; height: 8px; background: red; border-radius: 50%; }
-        .dot.active { background: #34c759; box-shadow: 0 0 10px #34c759; }
+        /* HEADER STATS */
+        .stats { display: flex; justify-content: space-between; padding: 15px; background: #1c1c1e; border-bottom: 1px solid #333; }
+        .stat-item { text-align: center; width: 30%; }
+        .val { font-size: 18px; font-weight: bold; color: #34c759; }
+        .lbl { font-size: 11px; color: #888; }
 
-        /* Controls */
-        .controls { margin-top: auto; display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn { flex: 1; padding: 18px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .start { background: #34c759; color: white; }
-        .stop { background: #ff3b30; color: white; display: none; }
+        /* ORDER FEED (LENTA) */
+        .feed { flex: 1; overflow-y: auto; padding: 15px; }
+        .order-card { background: #222; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #34c759; }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .price-tag { font-size: 18px; font-weight: bold; }
         
-        /* Finance */
-        .finance { position: absolute; top: 20px; right: 20px; background: #1c1c1e; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: bold; border: 1px solid #333; }
+        /* ACTIVE RIDE (YASHIRIN) */
+        #activeRide { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: none; flex-direction: column; }
+        .meter-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .big-price { font-size: 70px; font-weight: 800; color: #34c759; }
+        
+        /* BUTTONS */
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .green { background: #34c759; color: white; }
+        .red { background: #ff3b30; color: white; }
     </style>
 </head>
 <body>
 
-    <div class="status-bar"><div class="dot" id="gpsDot"></div> <span id="gpsTxt">GPS OFF</span></div>
-    <div class="finance">45,000 so'm</div>
-
-    <div class="dash">
-        <div class="price" id="price">0</div>
-        <div class="label">SO'M</div>
-        <div class="km" id="km">0.00 km</div>
+    <div class="stats">
+        <div class="stat-item"><div class="val">50,000</div><div class="lbl">Balans</div></div>
+        <div class="stat-item"><div class="val">12</div><div class="lbl">Buyurtma</div></div>
+        <div class="stat-item"><div class="val">45 km</div><div class="lbl">Masofa</div></div>
     </div>
 
-    <div class="controls">
-        <button class="btn start" id="startBtn" onclick="startRide()">Boshlash</button>
-        <button class="btn stop" id="stopBtn" onclick="finishRide()">Yakunlash</button>
+    <div class="feed" id="feedView">
+        <h3 style="color:#666; text-align:center;">Kutilayotgan Buyurtmalar</h3>
+        
+        <div class="order-card" onclick="openOrder()">
+            <div class="card-header">
+                <span class="price-tag">Start: 4,000 so'm</span>
+                <span style="color:#888;">0.5 km</span>
+            </div>
+            <div style="color:#ddd;"><i class="fa-solid fa-location-dot"></i> Markaziy Bozor -> Vokzal</div>
+        </div>
+    </div>
+
+    <div id="activeRide">
+        <div class="stats" style="background:black;">
+            <div>Mijoz: <b>Ali</b> (+99890...)</div>
+            <button onclick="openMap()" style="background:#333; color:white; border:none; padding:5px;">🗺 Map</button>
+        </div>
+        
+        <div class="meter-area">
+            <div class="big-price" id="price">4,000</div>
+            <div style="color:#666;">SO'M</div>
+            <div style="font-size:24px; margin-top:10px;" id="km">0.00 km</div>
+        </div>
+
+        <div style="padding:20px;">
+            <button class="btn green" id="startBtn" onclick="startMeter()">START (YURISH)</button>
+            <button class="btn red" id="stopBtn" onclick="finishMeter()" style="display:none;">FINISH (YAKUNLASH)</button>
+        </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp; tg.expand();
         const START_PRICE = 4000; const KM_PRICE = 3000;
-        let watchId, totalKm = 0, totalPrice = 0, wakeLock = null;
+        let watchId, totalKm = 0, totalPrice = 0, wakeLock;
 
-        async function lockScreen() {
-            try { wakeLock = await navigator.wakeLock.request('screen'); console.log("Locked"); } catch(e){}
-        }
+        // EKRAN O'CHMASLIGI
+        async function keepAwake() { try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} }
 
-        function startRide() {
-            lockScreen();
-            document.getElementById('startBtn').style.display = 'none';
-            document.getElementById('stopBtn').style.display = 'block';
-            totalPrice = START_PRICE; updateUI();
-
-            if(navigator.geolocation) {
-                let lastPos = null;
-                watchId = navigator.geolocation.watchPosition(pos => {
-                    document.getElementById('gpsDot').classList.add('active');
-                    document.getElementById('gpsTxt').innerText = "ONLINE";
-                    
-                    if(lastPos) {
-                        let d = calcDist(lastPos.coords.latitude, lastPos.coords.longitude, pos.coords.latitude, pos.coords.longitude);
-                        if(d > 0.01 && d < 0.2) { totalKm += d; totalPrice = START_PRICE + (totalKm * KM_PRICE); updateUI(); }
-                    }
-                    lastPos = pos;
-                    
-                    // Serverga yuborish
-                    tg.sendData(JSON.stringify({ action: "update_location", lat: pos.coords.latitude, lon: pos.coords.longitude }));
-                }, err => alert("GPS Error"), { enableHighAccuracy: true });
+        function openOrder() {
+            if(confirm("Buyurtmani qabul qilasizmi?")) {
+                document.getElementById('activeRide').style.display = 'flex';
+                keepAwake();
             }
         }
 
-        function finishRide() {
-            if(confirm("Tugatamizmi?")) {
+        function openMap() { window.open("http://maps.google.com"); }
+
+        function startMeter() {
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'block';
+            totalPrice = START_PRICE; updateUI();
+            
+            if(navigator.geolocation) {
+                let lastPos = null;
+                watchId = navigator.geolocation.watchPosition(pos => {
+                    if(lastPos) {
+                        let d = calcDist(lastPos.coords.latitude, lastPos.coords.longitude, pos.coords.latitude, pos.coords.longitude);
+                        if(d > 0.01) { totalKm += d; totalPrice = START_PRICE + (totalKm * KM_PRICE); updateUI(); }
+                    }
+                    lastPos = pos;
+                    // Serverga
+                    tg.sendData(JSON.stringify({action:"update_location", lat:pos.coords.latitude, lon:pos.coords.longitude}));
+                }, null, {enableHighAccuracy:true});
+            }
+        }
+
+        function finishMeter() {
+            if(confirm("Safar tugadimi?")) {
                 navigator.geolocation.clearWatch(watchId);
-                tg.sendData(JSON.stringify({ action: "finish_ride", price: Math.floor(totalPrice), km: totalKm.toFixed(2) }));
+                tg.sendData(JSON.stringify({action:"finish_ride", price:Math.floor(totalPrice), km:totalKm.toFixed(2)}));
             }
         }
 
@@ -90,7 +117,7 @@
             document.getElementById('price').innerText = Math.floor(totalPrice).toLocaleString();
             document.getElementById('km').innerText = totalKm.toFixed(2) + " km";
         }
-        
+
         function calcDist(lat1, lon1, lat2, lon2) {
             const R = 6371; const dLat = (lat2-lat1)*Math.PI/180; const dLon = (lon2-lon1)*Math.PI/180;
             const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
