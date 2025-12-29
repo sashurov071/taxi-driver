@@ -2,165 +2,100 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Taxi Admin Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #E11D48; --dark: #111827; --light: #F4F5F9; --white: #FFF; }
-        body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: var(--light); display: flex; height: 100vh; overflow: hidden; }
-
-        /* SIDEBAR (Responsive) */
-        .sidebar {
-            width: 260px; background: var(--white); padding: 20px; display: flex; flex-direction: column;
-            border-right: 1px solid #eee; position: fixed; height: 100%; z-index: 1000;
-            transition: 0.3s ease; left: 0; /* Kompyuterda ochiq */
-        }
-        .brand { font-size: 22px; font-weight: 800; color: var(--primary); margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
-        .menu-item {
-            padding: 12px 15px; border-radius: 12px; color: #6B7280; font-weight: 600; cursor: pointer;
-            margin-bottom: 5px; display: flex; align-items: center; gap: 12px; transition: 0.2s;
-        }
-        .menu-item:hover, .menu-item.active { background: #FFF0F3; color: var(--primary); }
-
-        /* MAIN CONTENT */
-        .main {
-            flex: 1; padding: 20px; overflow-y: auto; margin-left: 260px; /* Sidebar joyi */
-            width: 100%; transition: 0.3s;
-        }
-
-        /* HEADER & BURGER */
-        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
-        .burger { display: none; font-size: 24px; cursor: pointer; color: var(--dark); margin-right: 15px; }
-        .title h1 { font-size: 24px; font-weight: 800; margin: 0; }
+        body { margin: 0; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
-        /* OVERLAY (Telefonda menyu ochilganda orqa fon qorayishi) */
-        .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 900; display: none;
-        }
-
-        /* RESPONSIVE: TELEFON UCHUN */
-        @media (max-width: 768px) {
-            .sidebar { left: -280px; } /* Yashirinadi */
-            .sidebar.active { left: 0; } /* Chiqadi */
-            .main { margin-left: 0; padding: 15px; }
-            .burger { display: block; }
-            .overlay.active { display: block; }
-        }
-
-        /* CARDS & MAP */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
-        .stat-num { font-size: 24px; font-weight: 800; margin-top: 5px; }
-        #map { width: 100%; height: 400px; border-radius: 16px; margin-top: 20px; z-index: 1; }
+        /* SIDEBAR */
+        .sidebar { width: 250px; background: white; border-right: 1px solid #eee; padding: 20px; transition: 0.3s; position: fixed; height: 100%; z-index: 999; }
+        .sidebar.closed { transform: translateX(-100%); } /* Telefonda yopish */
         
-        .view-section { display: none; }
-        .view-section.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .menu-item { padding: 15px; cursor: pointer; color: #555; display: flex; align-items: center; gap: 10px; }
+        .menu-item:hover, .menu-item.active { color: #E11D48; background: #FFF0F3; border-radius: 10px; }
+
+        /* CONTENT */
+        .content { flex: 1; padding: 20px; margin-left: 250px; transition: 0.3s; width: 100%; overflow-y: auto; }
+        
+        /* RESPONSIVE */
+        @media(max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .content { margin-left: 0; }
+            .burger { display: block !important; }
+        }
+        .burger { display: none; font-size: 24px; cursor: pointer; margin-bottom: 20px; }
+        
+        /* CARDS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .card { padding: 20px; background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        #map { height: 400px; width: 100%; border-radius: 15px; margin-top: 20px; }
+        
+        .section { display: none; }
+        .section.active { display: block; }
     </style>
 </head>
 <body>
+    
+    <div class="sidebar" id="sidebar">
+        <h2 style="color:#E11D48;"><i class="fa-solid fa-taxi"></i> TaxiPro</h2>
+        <div class="menu-item active" onclick="show('dash')"><i class="fa-solid fa-chart-pie"></i> Dashboard</div>
+        <div class="menu-item" onclick="show('drivers')"><i class="fa-solid fa-users"></i> Haydovchilar</div>
+        <div class="menu-item" onclick="show('finance')"><i class="fa-solid fa-wallet"></i> Moliya</div>
+    </div>
 
-    <div class="overlay" onclick="toggleMenu()"></div>
-
-    <nav class="sidebar" id="sidebar">
-        <div class="brand">
-            <i class="fa-solid fa-taxi"></i> TaxiPro <i class="fa-solid fa-xmark" style="margin-left:auto; cursor:pointer; font-size:18px; display:none;" onclick="toggleMenu()" id="closeBtn"></i>
-        </div>
-        <div class="menu-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Dashboard</div>
-        <div class="menu-item" onclick="switchTab('drivers', this)"><i class="fa-solid fa-users"></i> Haydovchilar</div>
-        <div class="menu-item" onclick="switchTab('finance', this)"><i class="fa-solid fa-wallet"></i> Moliya</div>
-        <div class="menu-item" onclick="switchTab('settings', this)"><i class="fa-solid fa-gear"></i> Sozlamalar</div>
-    </nav>
-
-    <main class="main">
-        <div class="header">
-            <div style="display:flex; align-items:center;">
-                <div class="burger" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></div>
-                <div class="title">
-                    <h1>Dashboard</h1>
-                    <span style="font-size:13px; color:#888;">Muborak Tuman Markazi</span>
-                </div>
-            </div>
-            <img src="https://ui-avatars.com/api/?name=Admin&background=E11D48&color=fff" style="width:35px; height:35px; border-radius:50%;">
-        </div>
-
-        <div id="view-dashboard" class="view-section active">
+    <div class="content">
+        <div class="burger" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></div>
+        
+        <div id="dash" class="section active">
+            <h1>Dashboard</h1>
             <div class="grid">
-                <div class="card">
-                    <div style="color:#666; font-size:13px;">Jami Tushum</div>
-                    <div class="stat-num">$528,900</div>
-                </div>
-                <div class="card">
-                    <div style="color:#666; font-size:13px;">Online Haydovchilar</div>
-                    <div class="stat-num" style="color:#34c759;">14 ta</div>
-                </div>
-                <div class="card" style="background:#111827; color:white;">
-                    <div style="opacity:0.7; font-size:13px;">Buyurtmalar</div>
-                    <div class="stat-num">42 ta</div>
-                </div>
+                <div class="card"><h3>💰 Jami Tushum</h3><h1>$528,000</h1></div>
+                <div class="card"><h3>🚖 Online</h3><h1 style="color:green;">12 ta</h1></div>
             </div>
-            
             <div class="card">
                 <h3>Jonli Xarita</h3>
                 <div id="map"></div>
             </div>
         </div>
 
-        <div id="view-drivers" class="view-section">
-            <div class="card">
-                <h3>Haydovchilar Ro'yxati</h3>
-                <p>Jadval shu yerda bo'ladi...</p>
-            </div>
+        <div id="drivers" class="section">
+            <h1>Haydovchilar</h1>
+            <div class="card"><p>Ro'yxat yuklanmoqda...</p></div>
         </div>
-
-        <div id="view-finance" class="view-section">
-            <div class="card">
-                <h3>Depozit Tasdiqlash</h3>
-                <p>Kutilayotgan to'lovlar yo'q.</p>
-            </div>
+        
+        <div id="finance" class="section">
+            <h1>Moliya</h1>
+            <div class="card"><p>Sozlamalar...</p></div>
         </div>
-    </main>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // RESPONSIVE MENU
         function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.querySelector('.overlay').classList.toggle('active');
-            
-            // Telefonda 'X' tugmasini ko'rsatish
-            const closeBtn = document.getElementById('closeBtn');
-            if(window.innerWidth <= 768) closeBtn.style.display = 'block';
+            document.getElementById('sidebar').classList.toggle('open');
         }
-
-        function switchTab(id, el) {
-            document.querySelectorAll('.view-section').forEach(x => x.classList.remove('active'));
-            document.querySelectorAll('.menu-item').forEach(x => x.classList.remove('active'));
-            document.getElementById('view-'+id).classList.add('active');
-            el.classList.add('active');
-            
-            // Telefonda menyuni yopish
+        function show(id) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
             if(window.innerWidth <= 768) toggleMenu();
-            
-            // Xaritani to'g'irlash
             setTimeout(() => { map.invalidateSize(); }, 100);
         }
 
-        // MAP LOGIC
         var map = L.map('map').setView([39.2618, 65.1522], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        L.circle([39.2618, 65.1522], { color: '#E11D48', fillColor: '#E11D48', fillOpacity: 0.1, radius: 15000 }).addTo(map);
 
         async function updateMap() {
             try {
                 let res = await fetch('http://localhost:8080/api/drivers');
                 let drivers = await res.json();
-                 // Markerlarni yangilash logikasi...
-                console.log("Drivers:", drivers);
-            } catch(e) {}
+                // Markerlarni chizish (soddalashtirilgan)
+                drivers.forEach(d => {
+                    L.marker([d.lat, d.lon]).addTo(map).bindPopup(d.name);
+                });
+            } catch(e){}
         }
         setInterval(updateMap, 5000);
     </script>
