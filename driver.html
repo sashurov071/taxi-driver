@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Taxi Driver Pro</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ASOSIY TUNGI REJIM */
+        body { background-color: #000000; color: #ffffff; font-family: -apple-system, sans-serif; margin: 0; padding: 20px; padding-bottom: 90px; }
+        
+        /* DASHBOARD */
+        .dashboard-card { text-align: center; margin-top: 30px; animation: fadeIn 0.5s; }
+        .price-display { font-size: 56px; font-weight: 800; color: #34c759; margin-bottom: 5px; letter-spacing: -1px; }
+        .km-display { font-size: 24px; color: #888; font-weight: 500; }
+        .status-pill { background: #1c1c1e; padding: 6px 16px; border-radius: 20px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; }
+        .dot.online { background: #34c759; box-shadow: 0 0 10px #34c759; }
+
+        /* MOLIYA PANELI */
+        .finance-card {
+            background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%);
+            padding: 20px; border-radius: 18px; margin-bottom: 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid #333;
+        }
+        .balance-label { font-size: 12px; color: #aaa; margin-bottom: 4px; }
+        .balance-amount { font-size: 22px; font-weight: 700; color: #fff; }
+        .btn-deposit {
+            background: rgba(52, 199, 89, 0.2); color: #34c759; border: 1px solid #34c759;
+            padding: 8px 16px; border-radius: 12px; font-weight: 600; cursor: pointer;
+        }
+
+        /* TARIYX RO'YXATI */
+        .history-list { margin-top: 20px; display: none; }
+        .history-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 0; border-bottom: 1px solid #222;
+        }
+        .h-icon { width: 36px; height: 36px; background: #222; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; }
+        .income { color: #34c759; } .expense { color: #ff3b30; }
+
+        /* TUGMALAR */
+        .btn-container {
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            display: flex; gap: 15px; z-index: 100;
+        }
+        .btn {
+            flex: 1; padding: 18px; border: none; border-radius: 16px;
+            font-size: 18px; font-weight: 700; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); transition: 0.2s;
+        }
+        .btn-start { background: #34c759; color: white; }
+        .btn-stop { background: #ff3b30; color: white; display: none; }
+        
+        /* TABS */
+        .tabs { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; padding: 10px 0; border-top: 1px solid #222; }
+        .tab-item { flex: 1; text-align: center; color: #555; font-size: 24px; cursor: pointer; }
+        .tab-item.active { color: #34c759; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="view-meter" class="view-section">
+        <div class="finance-card">
+            <div>
+                <div class="balance-label">Mening Balansim</div>
+                <div class="balance-amount">45,500 so'm</div>
+            </div>
+            <button class="btn-deposit" onclick="requestDeposit()">+ To'ldirish</button>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="status-pill"><div class="dot" id="gpsDot"></div> <span id="gpsText">GPS Qidirilmoqda...</span></div>
+            <div class="price-display" id="priceVal">0</div>
+            <div style="font-size: 14px; color: #666; margin-bottom: 5px;">SO'M</div>
+            <div class="km-display" id="kmVal">0.00 km</div>
+        </div>
+    </div>
+
+    <div id="view-history" class="view-section" style="display:none;">
+        <h2 style="margin-bottom:20px;">Bugungi Tarix</h2>
+        <div id="historyContainer">
+            </div>
+    </div>
+
+    <div class="btn-container">
+        <button class="btn btn-start" id="startBtn" onclick="startRide()">Boshlash</button>
+        <button class="btn btn-stop" id="stopBtn" onclick="finishRide()">Yakunlash</button>
+    </div>
+
+    <div class="tabs">
+        <div class="tab-item active" onclick="switchTab('meter')"><i class="fa-solid fa-gauge"></i></div>
+        <div class="tab-item" onclick="switchTab('history')"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const START_PRICE = 4000;
+        const KM_PRICE = 3000;
+
+        let watchId = null;
+        let totalKm = 0;
+        let totalPrice = 0;
+        let wakeLock = null;
+
+        // 1. WAKE LOCK (EKRAN O'CHMASLIGI UCHUN)
+        async function requestWakeLock() {
+            try { wakeLock = await navigator.wakeLock.request('screen'); console.log("Screen Lock Active"); } 
+            catch (err) { console.log("Wake Lock Error", err); }
+        }
+
+        // 2. TARIYXNI CHIQARISH (Simulyatsiya)
+        const historyData = [
+            { title: "Safar #104", amount: "+12,000", type: "income", time: "14:30" },
+            { title: "Komissiya", amount: "-1,200", type: "expense", time: "14:30" }
+        ];
+        
+        function renderHistory() {
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = "";
+            historyData.forEach(item => {
+                const color = item.type === 'income' ? '#34c759' : '#ff3b30';
+                const icon = item.type === 'income' ? 'fa-arrow-down' : 'fa-percent';
+                container.innerHTML += `
+                    <div class="history-item">
+                        <div style="display:flex; align-items:center;">
+                            <div class="h-icon"><i class="fa-solid ${icon}" style="color:${color}"></i></div>
+                            <div>
+                                <div style="font-weight:600; font-size:15px;">${item.title}</div>
+                                <div style="font-size:12px; color:#666;">${item.time}</div>
+                            </div>
+                        </div>
+                        <div style="font-weight:700; color:${color};">${item.amount}</div>
+                    </div>
+                `;
+            });
+        }
+        renderHistory();
+
+        // 3. ISHNI BOSHLASH
+        function startRide() {
+            requestWakeLock();
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'block';
+            
+            totalPrice = START_PRICE;
+            updateUI();
+
+            if (navigator.geolocation) {
+                let lastPos = null;
+                watchId = navigator.geolocation.watchPosition((pos) => {
+                    // GPS UI
+                    document.getElementById('gpsDot').classList.add('online');
+                    document.getElementById('gpsText').innerText = "ONLINE (Muborak)";
+                    
+                    if(lastPos) {
+                        const dist = calcDist(lastPos.coords.latitude, lastPos.coords.longitude, pos.coords.latitude, pos.coords.longitude);
+                        // Anti-Noise: 10m dan 500m gacha bo'lgan siljishni olamiz
+                        if(dist > 0.01 && dist < 0.5) {
+                            totalKm += dist;
+                            totalPrice = START_PRICE + (totalKm * KM_PRICE);
+                            updateUI();
+                        }
+                    }
+                    lastPos = pos;
+                    
+                    // BOTGA YUBORISH
+                    tg.sendData(JSON.stringify({ 
+                        action: "update_location", 
+                        lat: pos.coords.latitude, 
+                        lon: pos.coords.longitude 
+                    }));
+
+                }, (err) => { alert("GPS Xatosi!"); }, { enableHighAccuracy: true });
+            }
+        }
+
+        function finishRide() {
+            if(confirm("Safar yakunlansinmi?")) {
+                navigator.geolocation.clearWatch(watchId);
+                tg.sendData(JSON.stringify({
+                    action: "finish_ride",
+                    price: Math.floor(totalPrice),
+                    km: totalKm.toFixed(2)
+                }));
+            }
+        }
+
+        function requestDeposit() {
+            const amount = prompt("Qancha summa kiritmoqchisiz?", "50000");
+            if(amount) {
+                tg.sendData(JSON.stringify({ action: "deposit_request", amount: amount }));
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('priceVal').innerText = Math.floor(totalPrice).toLocaleString();
+            document.getElementById('kmVal').innerText = totalKm.toFixed(2) + " km";
+        }
+
+        function calcDist(lat1, lon1, lat2, lon2) {
+            const R = 6371; 
+            const dLat = (lat2-lat1)*Math.PI/180;
+            const dLon = (lon2-lon1)*Math.PI/180;
+            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function switchTab(tab) {
+            document.getElementById('view-meter').style.display = tab === 'meter' ? 'block' : 'none';
+            document.getElementById('view-history').style.display = tab === 'history' ? 'block' : 'none';
+            // Tab active klassini o'zgartirish logikasini shu yerga qo'shish mumkin
+        }
+    </script>
+</body>
+</html>
