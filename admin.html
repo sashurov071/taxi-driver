@@ -2,102 +2,249 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Taxi Pro Admin</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { margin: 0; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* SIDEBAR */
-        .sidebar { width: 250px; background: white; border-right: 1px solid #eee; padding: 20px; transition: 0.3s; position: fixed; height: 100%; z-index: 999; }
-        .sidebar.closed { transform: translateX(-100%); } /* Telefonda yopish */
-        
-        .menu-item { padding: 15px; cursor: pointer; color: #555; display: flex; align-items: center; gap: 10px; }
-        .menu-item:hover, .menu-item.active { color: #E11D48; background: #FFF0F3; border-radius: 10px; }
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        /* CONTENT */
-        .content { flex: 1; padding: 20px; margin-left: 250px; transition: 0.3s; width: 100%; overflow-y: auto; }
-        
-        /* RESPONSIVE */
-        @media(max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
-            .content { margin-left: 0; }
-            .burger { display: block !important; }
+    <style>
+        :root {
+            --bg-dark: #111827;
+            --bg-card: #1F2937;
+            --text-white: #F9FAFB;
+            --text-gray: #9CA3AF;
+            --primary: #E11D48; /* Pushti-Qizil */
+            --success: #10B981;
         }
-        .burger { display: none; font-size: 24px; cursor: pointer; margin-bottom: 20px; }
-        
-        /* CARDS */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .card { padding: 20px; background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        #map { height: 400px; width: 100%; border-radius: 15px; margin-top: 20px; }
-        
-        .section { display: none; }
+
+        body { margin: 0; padding: 0; background-color: var(--bg-dark); color: var(--text-white); font-family: sans-serif; padding-bottom: 80px; }
+
+        /* --- NAVIGATSIYA --- */
+        .nav-bar {
+            display: flex; overflow-x: auto; background: var(--bg-card); padding: 15px;
+            gap: 15px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #374151;
+        }
+        .nav-item {
+            padding: 8px 16px; background: #374151; border-radius: 20px; white-space: nowrap; font-size: 14px; cursor: pointer; transition: 0.3s;
+        }
+        .nav-item.active { background: var(--primary); color: white; font-weight: bold; }
+
+        /* --- SEKSIYALAR --- */
+        .section { display: none; padding: 20px; animation: fadeIn 0.3s; }
         .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- DASHBOARD & MAP --- */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-card); padding: 15px; border-radius: 12px; }
+        .stat-val { font-size: 20px; font-weight: bold; margin-top: 5px; }
+        .stat-label { font-size: 12px; color: var(--text-gray); }
+        
+        #adminMap { height: 300px; width: 100%; border-radius: 15px; margin-bottom: 20px; z-index: 1; }
+
+        /* --- MOLIYA (LIST) --- */
+        .deposit-item {
+            background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--success);
+        }
+        .btn-action { padding: 8px 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; margin-left: 5px; }
+        .btn-approve { background: var(--success); color: white; }
+        .btn-reject { background: #4B5563; color: white; }
+
+        /* --- DRIVERS LIST --- */
+        .driver-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-card); padding: 12px; border-radius: 10px; margin-bottom: 8px;
+        }
+        .status-badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .st-online { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .st-busy { background: rgba(225, 29, 72, 0.2); color: var(--primary); }
+
+        /* --- INPUTS --- */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; color: var(--text-gray); font-size: 12px; margin-bottom: 5px; }
+        .input-control { width: 100%; background: #374151; border: none; padding: 12px; color: white; border-radius: 8px; box-sizing: border-box;}
     </style>
 </head>
 <body>
-    
-    <div class="sidebar" id="sidebar">
-        <h2 style="color:#E11D48;"><i class="fa-solid fa-taxi"></i> TaxiPro</h2>
-        <div class="menu-item active" onclick="show('dash')"><i class="fa-solid fa-chart-pie"></i> Dashboard</div>
-        <div class="menu-item" onclick="show('drivers')"><i class="fa-solid fa-users"></i> Haydovchilar</div>
-        <div class="menu-item" onclick="show('finance')"><i class="fa-solid fa-wallet"></i> Moliya</div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab('dashboard', this)">📊 Dashboard</div>
+        <div class="nav-item" onclick="switchTab('finance', this)">💰 Moliya <span style="background:red; padding:0 4px; border-radius:4px; font-size:10px;">2</span></div>
+        <div class="nav-item" onclick="switchTab('drivers', this)">🚖 Haydovchilar</div>
+        <div class="nav-item" onclick="switchTab('settings', this)">⚙️ Sozlamalar</div>
     </div>
 
-    <div class="content">
-        <div class="burger" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></div>
-        
-        <div id="dash" class="section active">
-            <h1>Dashboard</h1>
-            <div class="grid">
-                <div class="card"><h3>💰 Jami Tushum</h3><h1>$528,000</h1></div>
-                <div class="card"><h3>🚖 Online</h3><h1 style="color:green;">12 ta</h1></div>
+    <div id="view-dashboard" class="section active">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Bugungi Tushum</div>
+                <div class="stat-val" style="color: var(--success);">+1,250,000</div>
             </div>
-            <div class="card">
-                <h3>Jonli Xarita</h3>
-                <div id="map"></div>
+            <div class="stat-card">
+                <div class="stat-label">Aktiv Haydovchilar</div>
+                <div class="stat-val">12 ta</div>
             </div>
         </div>
 
-        <div id="drivers" class="section">
-            <h1>Haydovchilar</h1>
-            <div class="card"><p>Ro'yxat yuklanmoqda...</p></div>
-        </div>
-        
-        <div id="finance" class="section">
-            <h1>Moliya</h1>
-            <div class="card"><p>Sozlamalar...</p></div>
+        <h3 style="margin: 0 0 10px 0;">Jonli Xarita (Muborak)</h3>
+        <div id="adminMap"></div>
+
+        <div class="stat-card">
+            <h3 style="margin: 0 0 15px 0; font-size: 14px;">Haftalik Statistika</h3>
+            <canvas id="revenueChart" height="150"></canvas>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div id="view-finance" class="section">
+        <h3 style="color: var(--text-gray);">Tasdiqlash kutilmoqda</h3>
+        
+        <div class="deposit-item">
+            <div>
+                <div style="font-weight: bold;">Ali Valiyev</div>
+                <div style="font-size: 12px; color: var(--text-gray);">Chek: #99831...</div>
+                <div style="font-size: 14px; color: var(--success);">+50,000 so'm</div>
+            </div>
+            <div>
+                <button class="btn-action btn-approve" onclick="approveDeposit(123)">OK</button>
+                <button class="btn-action btn-reject" onclick="alert('Rad etildi')">X</button>
+            </div>
+        </div>
+        
+        <div class="deposit-item">
+            <div>
+                <div style="font-weight: bold;">Bekzod K.</div>
+                <div style="font-size: 12px; color: var(--text-gray);">Chek: #11234...</div>
+                <div style="font-size: 14px; color: var(--success);">+100,000 so'm</div>
+            </div>
+            <div>
+                <button class="btn-action btn-approve" onclick="approveDeposit(124)">OK</button>
+                <button class="btn-action btn-reject">X</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-drivers" class="section">
+        <div class="input-group">
+            <input type="text" class="input-control" placeholder="Ism yoki telefon orqali qidirish...">
+        </div>
+        
+        <div class="driver-row">
+            <div>
+                <div style="font-weight: bold;">Sardor R.</div>
+                <div style="font-size: 12px; color: var(--text-gray);">Cobalt 80 A 777 AA</div>
+            </div>
+            <div class="status-badge st-online">ONLINE</div>
+        </div>
+        <div class="driver-row">
+            <div>
+                <div style="font-weight: bold;">Jasur B.</div>
+                <div style="font-size: 12px; color: var(--text-gray);">Nexia 3 (Qora)</div>
+            </div>
+            <div class="status-badge st-busy">BAND</div>
+        </div>
+    </div>
+
+    <div id="view-settings" class="section">
+        <h3 style="margin-bottom: 20px;">Tariflar</h3>
+        
+        <div class="input-group">
+            <label>Boshlang'ich narx (so'm)</label>
+            <input type="number" class="input-control" value="4000" id="startPrice">
+        </div>
+        <div class="input-group">
+            <label>1 KM narxi (so'm)</label>
+            <input type="number" class="input-control" value="2500" id="kmPrice">
+        </div>
+        <div class="input-group">
+            <label>Komissiya (%)</label>
+            <input type="number" class="input-control" value="10">
+        </div>
+        
+        <button class="btn-action btn-approve" style="width: 100%; padding: 15px; font-size: 16px;" onclick="saveSettings()">Saqlash</button>
+    </div>
+
     <script>
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
-        function show(id) {
-            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if(window.innerWidth <= 768) toggleMenu();
-            setTimeout(() => { map.invalidateSize(); }, 100);
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // 1. TABS LOGIC
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('view-' + tabId).classList.add('active');
+            el.classList.add('active');
+            
+            // Agar Dashboard ochilsa, xaritani yangilash kerak (Leaflet bug)
+            if(tabId === 'dashboard') {
+                setTimeout(() => { map.invalidateSize(); }, 300);
+            }
         }
 
-        var map = L.map('map').setView([39.2618, 65.1522], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        // 2. ADMIN MAP (Leaflet)
+        var map = L.map('adminMap').setView([39.2596, 65.1539], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
 
-        async function updateMap() {
-            try {
-                let res = await fetch('http://localhost:8080/api/drivers');
-                let drivers = await res.json();
-                // Markerlarni chizish (soddalashtirilgan)
-                drivers.forEach(d => {
-                    L.marker([d.lat, d.lon]).addTo(map).bindPopup(d.name);
-                });
-            } catch(e){}
+        // Dummy Drivers (Namuna uchun)
+        var carIcon = L.divIcon({
+            html: '<i class="fa-solid fa-car" style="color:#10B981; font-size:18px;"></i>',
+            className: 'dummy-icon'
+        });
+        var busyIcon = L.divIcon({
+            html: '<i class="fa-solid fa-car" style="color:#E11D48; font-size:18px;"></i>',
+            className: 'dummy-icon'
+        });
+
+        L.marker([39.2620, 65.1550], {icon: carIcon}).addTo(map).bindPopup("Sardor (Bo'sh)");
+        L.marker([39.2550, 65.1500], {icon: busyIcon}).addTo(map).bindPopup("Jasur (Band)");
+
+        // 3. ACTIONS
+        function approveDeposit(userId) {
+            if(confirm("To'lov tasdiqlansinmi? Haydovchi balansiga pul tushadi.")) {
+                // Botga signal
+                tg.sendData(JSON.stringify({
+                    action: "approve_deposit",
+                    driver_id: userId,
+                    amount: 50000
+                }));
+                alert("Tasdiqlandi!");
+            }
         }
-        setInterval(updateMap, 5000);
+
+        function saveSettings() {
+            const start = document.getElementById('startPrice').value;
+            tg.sendData(JSON.stringify({
+                action: "update_settings",
+                start_price: start
+            }));
+            tg.showAlert("Sozlamalar saqlandi!");
+        }
+
+        // 4. CHART (Statistika)
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'line',
+            data: {
+                labels: ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'],
+                datasets: [{
+                    label: 'Daromad (mln)',
+                    data: [1.2, 1.5, 1.1, 1.8, 2.0, 2.5, 2.2],
+                    borderColor: '#E11D48',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
     </script>
 </body>
 </html>
