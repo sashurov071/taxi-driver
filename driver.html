@@ -3,125 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Driver Terminal</title>
+    <title>Taxi Pro Driver</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        
-        /* HEADER STATS */
-        .stats { display: flex; justify-content: space-between; padding: 15px; background: #1c1c1e; border-bottom: 1px solid #333; }
-        .stat-item { text-align: center; width: 30%; }
-        .val { font-size: 18px; font-weight: bold; color: #34c759; }
-        .lbl { font-size: 11px; color: #888; }
+        /* --- 1. GLOBAL DIZAYN (AMOLED DARK) --- */
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1C1C1E;
+            --text-main: #FFFFFF;
+            --text-sec: #8E8E93;
+            --primary: #34C759; /* Yashil */
+            --danger: #FF3B30;  /* Qizil */
+            --accent: #0A84FF;  /* Ko'k */
+        }
+        body { margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main); font-family: sans-serif; overflow: hidden; }
 
-        /* ORDER FEED (LENTA) */
-        .feed { flex: 1; overflow-y: auto; padding: 15px; }
-        .order-card { background: #222; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #34c759; }
-        .card-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .price-tag { font-size: 18px; font-weight: bold; }
-        
-        /* ACTIVE RIDE (YASHIRIN) */
-        #activeRide { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: none; flex-direction: column; }
-        .meter-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .big-price { font-size: 70px; font-weight: 800; color: #34c759; }
-        
-        /* BUTTONS */
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .green { background: #34c759; color: white; }
-        .red { background: #ff3b30; color: white; }
+        /* --- 2. HEADER (TEPA QISM) --- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; background: #121212; border-bottom: 1px solid #333;
+            position: fixed; top: 0; width: 100%; z-index: 10; height: 60px; box-sizing: border-box;
+        }
+        .header-left { display: flex; flex-direction: column; }
+        .header-right { text-align: right; }
+        .income-val { font-size: 18px; font-weight: bold; color: var(--primary); }
+        .dist-val { font-size: 12px; color: var(--text-sec); }
+        .balance-box { background: rgba(255, 59, 48, 0.15); padding: 5px 10px; border-radius: 8px; border: 1px solid var(--danger); }
+        .balance-val { color: var(--danger); font-weight: bold; font-size: 14px; }
+        .balance-label { font-size: 10px; color: var(--danger); display: block; }
+
+        /* --- 3. ASOSIY EKRAN (LENTA) --- */
+        .main-container { padding: 80px 15px 100px 15px; height: 100vh; overflow-y: auto; }
+        .order-card {
+            background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 15px;
+            border-left: 4px solid var(--accent); position: relative;
+        }
+        .order-price { font-size: 20px; font-weight: bold; color: #FFD60A; position: absolute; top: 20px; right: 20px; }
+        .route-line { margin: 15px 0; }
+        .point { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 15px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .green-dot { background: var(--primary); }
+        .red-dot { background: var(--danger); }
+        .btn-accept { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+
+        /* --- 4. AKTIV EKRAN (TAKSO-METR) --- */
+        .meter-screen {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 50; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .meter-circle {
+            width: 250px; height: 250px; border: 4px solid var(--primary); border-radius: 50%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 0 30px rgba(52, 199, 89, 0.2); margin-bottom: 40px;
+        }
+        .live-price { font-size: 48px; font-weight: 800; color: white; }
+        .live-km { font-size: 24px; color: var(--text-sec); margin-top: 5px; }
+        .meter-controls { width: 90%; display: flex; gap: 15px; }
+        .btn-big { flex: 1; padding: 15px; border-radius: 12px; font-size: 18px; font-weight: bold; border: none; cursor: pointer; }
+        .btn-nav { background: #333; color: white; }
+        .btn-finish { background: var(--danger); color: white; }
+
+        /* --- 5. FOOTER (PASTKI TUGMALAR) --- */
+        .footer {
+            position: fixed; bottom: 0; width: 100%; background: #121212; padding: 15px;
+            display: flex; gap: 10px; border-top: 1px solid #333; box-sizing: border-box;
+        }
+        .btn-footer { flex: 1; padding: 12px; background: #2C2C2E; color: white; border: none; border-radius: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="stats">
-        <div class="stat-item"><div class="val">50,000</div><div class="lbl">Balans</div></div>
-        <div class="stat-item"><div class="val">12</div><div class="lbl">Buyurtma</div></div>
-        <div class="stat-item"><div class="val">45 km</div><div class="lbl">Masofa</div></div>
-    </div>
-
-    <div class="feed" id="feedView">
-        <h3 style="color:#666; text-align:center;">Kutilayotgan Buyurtmalar</h3>
-        
-        <div class="order-card" onclick="openOrder()">
-            <div class="card-header">
-                <span class="price-tag">Start: 4,000 so'm</span>
-                <span style="color:#888;">0.5 km</span>
+    <div class="header">
+        <div class="header-left">
+            <span class="income-val" id="totalIncome">150,000 so'm</span>
+            <span class="dist-val" id="totalKm">45.2 km</span>
+        </div>
+        <div class="header-right">
+            <div class="balance-box">
+                <span class="balance-label">Komissiya</span>
+                <span class="balance-val" id="balanceVal">35,000</span>
             </div>
-            <div style="color:#ddd;"><i class="fa-solid fa-location-dot"></i> Markaziy Bozor -> Vokzal</div>
         </div>
     </div>
 
-    <div id="activeRide">
-        <div class="stats" style="background:black;">
-            <div>Mijoz: <b>Ali</b> (+99890...)</div>
-            <button onclick="openMap()" style="background:#333; color:white; border:none; padding:5px;">🗺 Map</button>
+    <div class="main-container" id="feedScreen">
+        <h3 style="margin-top: 0; color: #666; font-size: 14px;">YANGI BUYURTMALAR</h3>
+        
+        <div id="ordersList">
+            <div class="order-card">
+                <div class="order-price">12,000 so'm</div>
+                <div style="font-size: 12px; color: #888;">#101 • Bot orqali</div>
+                <div class="route-line">
+                    <div class="point"><div class="dot green-dot"></div> Vokzal (Temir yo'l)</div>
+                    <div class="point"><div class="dot red-dot"></div> 5-mikrorayon, 12-dom</div>
+                </div>
+                <button class="btn-accept" onclick="acceptOrder(101, 39.26, 65.16)">Qabul qilish</button>
+            </div>
         </div>
         
-        <div class="meter-area">
-            <div class="big-price" id="price">4,000</div>
-            <div style="color:#666;">SO'M</div>
-            <div style="font-size:24px; margin-top:10px;" id="km">0.00 km</div>
+        <div style="text-align: center; color: #444; margin-top: 50px; display: none;" id="noOrders">
+            <i class="fa-solid fa-satellite-dish" style="font-size: 40px; margin-bottom: 10px;"></i>
+            <br>Buyurtmalar qidirilmoqda...
+        </div>
+    </div>
+
+    <div class="meter-screen" id="meterScreen">
+        <div class="meter-circle">
+            <div class="live-price" id="meterPrice">4000</div>
+            <div style="font-size: 14px; color: #888;">so'm</div>
+            <div class="live-km" id="meterKm">0.0 km</div>
+        </div>
+        
+        <div id="preRideControls" style="width: 90%;">
+             <button class="btn-big btn-nav" onclick="openMap()" style="width: 100%; margin-bottom: 10px;">🗺 Xaritani ochish</button>
+             <button class="btn-big" onclick="startRide()" style="background: var(--primary); color: white; width: 100%;">▶️ Mijozni oldim (Start)</button>
         </div>
 
-        <div style="padding:20px;">
-            <button class="btn green" id="startBtn" onclick="startMeter()">START (YURISH)</button>
-            <button class="btn red" id="stopBtn" onclick="finishMeter()" style="display:none;">FINISH (YAKUNLASH)</button>
+        <div id="inRideControls" style="width: 90%; display: none; gap: 10px;">
+            <button class="btn-big btn-finish" onclick="finishRide()" style="width: 100%;">🏁 Yakunlash</button>
         </div>
+    </div>
+
+    <div class="footer">
+        <button class="btn-footer" onclick="tg.showAlert('Moliya bo\'limi tez orada ochiladi')">💰 Moliya</button>
+        <button class="btn-footer" onclick="tg.close()">❌ Chiqish</button>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp; tg.expand();
-        const START_PRICE = 4000; const KM_PRICE = 3000;
-        let watchId, totalKm = 0, totalPrice = 0, wakeLock;
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
 
-        // EKRAN O'CHMASLIGI
-        async function keepAwake() { try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} }
+        // --- SOZLAMALAR (Configdan kelishi kerak aslida) ---
+        const START_PRICE = 4000;
+        const PRICE_PER_KM = 2500;
+        
+        let currentOrder = null;
+        let rideInterval = null;
+        let totalKm = 0;
+        let currentPrice = START_PRICE;
+        let watchId = null;
 
-        function openOrder() {
-            if(confirm("Buyurtmani qabul qilasizmi?")) {
-                document.getElementById('activeRide').style.display = 'flex';
-                keepAwake();
-            }
-        }
-
-        function openMap() { window.open("http://maps.google.com"); }
-
-        function startMeter() {
-            document.getElementById('startBtn').style.display = 'none';
-            document.getElementById('stopBtn').style.display = 'block';
-            totalPrice = START_PRICE; updateUI();
+        // 1. BUYURTMANI QABUL QILISH
+        function acceptOrder(orderId, lat, lon) {
+            currentOrder = { id: orderId, lat: lat, lon: lon };
             
-            if(navigator.geolocation) {
+            // Botga signal yuborish
+            tg.sendData(JSON.stringify({
+                action: "accept_order",
+                order_id: orderId
+            }));
+
+            // Interfeysni o'zgartirish
+            document.getElementById('feedScreen').style.display = 'none';
+            document.querySelector('.footer').style.display = 'none';
+            document.querySelector('.header').style.display = 'none';
+            document.getElementById('meterScreen').style.display = 'flex';
+            
+            // Google Mapsni ochish
+            openMap();
+        }
+
+        function openMap() {
+            if(currentOrder) {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${currentOrder.lat},${currentOrder.lon}`, '_blank');
+            }
+        }
+
+        // 2. SAFARNI BOSHLASH (START)
+        function startRide() {
+            document.getElementById('preRideControls').style.display = 'none';
+            document.getElementById('inRideControls').style.display = 'flex';
+            
+            // GPSni ishga tushirish
+            if (navigator.geolocation) {
                 let lastPos = null;
-                watchId = navigator.geolocation.watchPosition(pos => {
-                    if(lastPos) {
-                        let d = calcDist(lastPos.coords.latitude, lastPos.coords.longitude, pos.coords.latitude, pos.coords.longitude);
-                        if(d > 0.01) { totalKm += d; totalPrice = START_PRICE + (totalKm * KM_PRICE); updateUI(); }
+                watchId = navigator.geolocation.watchPosition((position) => {
+                    if (lastPos) {
+                        // Masofani hisoblash (Metrda)
+                        let dist = getDistanceFromLatLonInKm(
+                            lastPos.coords.latitude, lastPos.coords.longitude,
+                            position.coords.latitude, position.coords.longitude
+                        );
+                        
+                        // GPS "shovqini"ni filtrlash (faqat 10 metrdan ko'p yursa)
+                        if (dist > 0.01) {
+                            totalKm += dist;
+                            updateMeter();
+                            lastPos = position;
+                        }
+                    } else {
+                        lastPos = position;
                     }
-                    lastPos = pos;
-                    // Serverga
-                    tg.sendData(JSON.stringify({action:"update_location", lat:pos.coords.latitude, lon:pos.coords.longitude}));
-                }, null, {enableHighAccuracy:true});
+                }, (err) => console.log(err), { enableHighAccuracy: true });
             }
         }
 
-        function finishMeter() {
-            if(confirm("Safar tugadimi?")) {
+        // Masofa hisoblash formulasi
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            var R = 6371; 
+            var dLat = deg2rad(lat2-lat1); 
+            var dLon = deg2rad(lon2-lon1); 
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            return R * c; 
+        }
+        function deg2rad(deg) { return deg * (Math.PI/180) }
+
+        function updateMeter() {
+            // Formula: Start + (Km * Tarif)
+            currentPrice = START_PRICE + (totalKm * PRICE_PER_KM);
+            
+            document.getElementById('meterKm').innerText = totalKm.toFixed(1) + " km";
+            document.getElementById('meterPrice').innerText = Math.floor(currentPrice).toLocaleString();
+        }
+
+        // 3. SAFARNI TUGATISH
+        function finishRide() {
+            if(confirm("Safar yakunlansinmi?")) {
                 navigator.geolocation.clearWatch(watchId);
-                tg.sendData(JSON.stringify({action:"finish_ride", price:Math.floor(totalPrice), km:totalKm.toFixed(2)}));
+                
+                // Botga yakuniy ma'lumotni yuborish
+                const data = {
+                    action: "finish_ride",
+                    order_id: currentOrder.id,
+                    km: totalKm.toFixed(2),
+                    payment_type: "cash" // Hozircha default, keyin tanlov qo'shamiz
+                };
+                
+                tg.sendData(JSON.stringify(data));
             }
-        }
-
-        function updateUI() {
-            document.getElementById('price').innerText = Math.floor(totalPrice).toLocaleString();
-            document.getElementById('km').innerText = totalKm.toFixed(2) + " km";
-        }
-
-        function calcDist(lat1, lon1, lat2, lon2) {
-            const R = 6371; const dLat = (lat2-lat1)*Math.PI/180; const dLon = (lon2-lon1)*Math.PI/180;
-            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
     </script>
 </body>
